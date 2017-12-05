@@ -1,0 +1,21 @@
+How will the UI know which vhost to request? or if no vhost should be requested?
+  - If it is part of the url, should the UI prevent hacking the url to get access to other vhosts?
+
+Right now the UI uses the address:port of the web page to get the router's host:port. This forces the UI to be served by a router. Is that OK?
+  - In other words, do we want a connect page to allow connecting to a remote router if the UI is not served by a router?
+
+Installation:
+  - Should the UI be installed with the stand-alone console?
+  - Should there be a CMake option to install the UI under the stand-alone console's directory?
+
+Help/Documentation:
+  - do a README
+
+GUI:
+  - refresh tree after DELETE
+  - reget tree after any operation and animate changes
+  - more testing
+  - sort $default to top of tree level
+  - reuse management connection and just create a sender and receiver for policy messages
+
+

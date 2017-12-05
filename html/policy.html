@@ -1,0 +1,228 @@
+<!--
+Licensed to the Apache Software Foundation (ASF) under one
+or more contributor license agreements.  See the NOTICE file
+distributed with this work for additional information
+regarding copyright ownership.  The ASF licenses this file
+to you under the Apache License, Version 2.0 (the
+"License"); you may not use this file except in compliance
+with the License.  You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing,
+software distributed under the License is distributed on an
+"AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+KIND, either express or implied.  See the License for the
+specific language governing permissions and limitations
+under the License.
+-->
+<div class="qdrTopology row-fluid" ng-controller="QDR.PolicyController">
+        <div class="hlegend">
+            <div class="legend policy">policy</div>
+            <div class="legend vhosts">vhosts</div>
+            <div class="legend groups">groups</div>
+        </div>
+    <div class="legend-grid">
+        <div class="legend policy"></div>
+        <div class="legend vhosts"></div>
+        <div class="legend groups"></div>
+    </div>
+        <div class="policy-container">
+            <div id="topology"></div>
+            <div class="all-forms">
+                <div ng-if="showForm === 'policy'">
+                    <h2 ng-show="formMode === 'edit'">{{currentForm.$dirty ? "Editing " : ""}}Policy</h2>
+                    <form name="editpolicy" ng-submit="formEditOK(formData, editpolicy)">
+                        <div class="form-group">
+                            <label for="maxConnections">Max Connections</label>
+                            <input name="maxConnections" type="number" class="form-control" id="maxPolicyConnections" placeholder="Defaults to 65535" ng-model="formData.maxConnections">
+                            <small class="form-text text-muted">
+                                <div>Global maximum number of concurrent client connections allowed. This limit is always enforced even if no other policy settings have been defined. This limit is applied to all incoming connections regardless of remote host, authenticated user, or targeted vhost.</div>
+                            </small>
+                        </div>
+                        <div class="form-check">
+                            <label class="form-check-label">
+                                <input bootstrap-switch type="checkbox" ng-model="formData.enableVhostPolicy" name="enableVhostPolicy">
+                                Enable vhost policy connection denial, and resource limit enforcement.
+                            </label>
+                        </div>
+                        <div class="form-group">
+                            <label for="defaultVhost">Default Vhost</label>
+                            <input name="defaultVhost" type="text" class="form-control" id="defaultVhost" placeholder="Defaults to $default" ng-model="formData.defaultVHost">
+                        </div>
+                        <button type="submit" class="btn btn-primary" ng-disabled="editpolicy.$invalid || editpolicy.$pristine">Apply</button>
+                        <button type="button" class="btn btn-warning" ng-disabled="!editpolicy.$dirty" ng-click="formCancel()">Cancel</button>
+                        <span ng-if="editpolicy.$error.unapplied" class="form-dirty"><== There are unapplied changes. Apply or Cancel before leaving this form.</span>
+                        <div ng-init="$parent.currentForm = editpolicy"></div>
+                        <input type="hidden" name="type" ng-model="formData.type">
+                    </form>
+                </div>
+                <div ng-if="showForm === 'vhost'">
+                    <h2 ng-show="formMode === 'edit'">{{currentForm.$dirty ? "Editing " : ""}}Vhost {{shadowData.name}}</h2>
+                    <h2 ng-show="formMode === 'add'">Adding new vhost</h2>
+                    <form name="editvhost" ng-submit="formEditOK(formData, editvhost)">
+                        <div class="form-group" ng-class="{'disabled': topLevel === 'vhost'}">
+                            <label for="vhostname">Vhost ID</label>
+                            <input
+                                    name="vhostname"
+                                    type="text"
+                                    class="form-control"
+                                    id="vhostname"
+                                    aria-describedby="vhostnamehelp"
+                                    placeholder="Enter vhost name"
+                                    ng-class="{'duplicate': formData.duplicate}"
+                                    ng-required="true"
+                                    ng-model="formData.name"
+                                    duplicate-sibling-name
+                            >
+                            <small id="vhostnamehelp" class="form-text text-muted">
+                                (e.g. example.com)
+                            </small>
+                            <small ng-messages="editvhost.vhostname.$error" role="alert">
+                                <div ng-message="required">Required</div>
+                                <div ng-message="duplicateName">Vhost name must be unique.</div>
+                            </small>
+                        </div>
+                        <div class="form-group">
+                            <label for="maxConnections">maxConnections</label>
+                            <input name="maxConnections" type="number" class="form-control" id="maxConnections" placeholder="Defaults to 65535" ng-model="formData.maxConnections">
+                        </div>
+                        <div class="form-group">
+                            <label for="maxConnectionsPerUser">maxConnectionsPerUser</label>
+                            <input name="maxConnectionsPerUser" type="number" class="form-control" id="maxConnectionsPerUser" placeholder="Defaults to 65535" ng-model="formData.maxConnectionsPerUser">
+                        </div>
+                        <div class="form-group">
+                            <label for="maxConnectionsPerHost">maxConnectionsPerHost</label>
+                            <input name="maxConnectionsPerHost" type="number" class="form-control" id="maxConnectionsPerHost" placeholder="Defaults to 65535" ng-model="formData.maxConnectionsPerHost">
+                        </div>
+                        <div class="form-check">
+                            <label class="form-check-label">
+                                <input ng-model="formData.allowUnknownUser" name="allowUnknownUser" type="checkbox" bootstrap-switch>
+                                Allow unknown user
+                            </label>
+                        </div>
+                        <button type="submit" class="btn btn-primary" ng-disabled="editvhost.$invalid || editvhost.$pristine">Apply</button>
+                        <button type="button" class="btn btn-warning" ng-disabled="!editvhost.$dirty" ng-click="formCancel()">Cancel</button>
+                        <button type="button" class="btn btn-danger" ng-if="formMode === 'edit' && topLevel === 'policy'" ng-click="formDelete(formData)">Delete</button>
+                        <div ng-init="$parent.currentForm = editvhost"></div>
+                        <input type="hidden" name="type" ng-model="formData.type">
+                    </form>
+                </div>
+                <div ng-if="showForm === 'group'">
+                    <h2 ng-show="formMode === 'edit'">{{currentForm.$dirty ? "Editing " : ""}}group {{shadowData.name}}</h2>
+                    <h2 ng-show="formMode === 'add'">Adding new group</h2>
+                    <form name="editgroup" ng-submit="formEditOK(formData, editgroup)">
+                        <div class="form-group">
+                            <label for="groupname">Group Name</label>
+                            <input
+                                    name="groupname"
+                                    type="text"
+                                    class="form-control"
+                                    id="groupname"
+                                    ng-required="true"
+                                    placeholder="Enter group name"
+                                    ng-model="formData.name"
+                                    duplicate-sibling-name
+                            >
+                            <small class="form-text text-muted">
+                                <div>The name for this group.</div>
+                            </small>
+                            <small ng-messages="editgroup.groupname.$error" role="alert">
+                                <div ng-message="required">Required</div>
+                                <div ng-message="duplicateName">Must be unique in this vhost.</div>
+                            </small>
+                        </div>
+                        <div class="form-group">
+                            <h3>Group Membership</h3>
+                            <label for="users">Users</label>
+                            <input
+                                    name="users"
+                                    type="text"
+                                    class="form-control"
+                                    id="users"
+                                    placeholder="Enter users"
+                                    ng-required="!defaultGroup"
+                                    ng-model="formData.users"
+                                    duplicate-user
+                            >
+                            <small class="form-text text-muted">
+                                <div>Comma separated list of authenticated users in this group.</div>
+                            </small>
+                            <small ng-messages="editgroup.users.$error" role="alert">
+                                <div ng-message="required">Required if name is not $default</div>
+                                <div ng-message="duplicateUser">{{dupUserMsg}}</div>
+                            </small>
+
+                        </div>
+                        <div class="form-group">
+                            <h3>Connection Restrictions</h3>
+                            <label for="remoteHosts">Remote Hosts</label>
+                            <input name="remoteHosts" type="text" class="form-control" id="remoteHosts" placeholder="An empty list denies all access" ng-model="formData.remoteHosts">
+                            <small class="form-text text-muted"><div>List of remote hosts from which the users may connect. List values may be host names, numeric IP addresses, numeric IP address ranges, or the wildcard *. An empty list denies all access.</div></small>
+                        </div>
+                        <div class="form-group">
+                            <h3>AMQP Connection Open Limits</h3>
+                            <label for="maxFrameSize">Max Frame Size</label>
+                            <input name="maxFrameSize" type="number" class="form-control" id="maxFrameSize" placeholder="Defaults to 2^31-1" ng-model="formData.maxFrameSize">
+                            <small class="form-text text-muted"><div>Largest frame that may be sent on this connection. (AMQP Open, max-frame-size)</div></small>
+                            <hr>
+                            <label for="maxSessions">Max Sessions</label>
+                            <input name="maxSessions" type="number" class="form-control" id="maxSessions" placeholder="Defaults to 65535" ng-model="formData.maxSessions">
+                            <small class="form-text text-muted"><div>Maximum number of sessions that may be created on this connection. (AMQP Open, channel-max)</div></small>
+                        </div>
+                        <div class="form-group">
+                            <h3>AMQP Session Begin Limits</h3>
+                            <label for="maxSessionWindow">Max Session Window</label>
+                            <input name="maxSessionWindow" type="number" class="form-control" id="maxSessionWindow" placeholder="Defaults to 2^31-1" ng-model="formData.maxSessionWindow">
+                            <small class="form-text text-muted"><div>Incoming capacity for new sessions. (AMQP Begin, incoming-window)</div></small>
+                        </div>
+                        <div class="form-group">
+                            <h3>AMQP Link Attach</h3>
+                            <label for="maxMessageSize">Max Message Size</label>
+                            <input name="maxMessageSize" type="number" class="form-control" id="maxMessageSize" placeholder="Defaults to 0 (no limit)" ng-model="formData.maxMessageSize">
+                            <small class="form-text text-muted"><div>Largest message size supported by links created on this connection. If this field is zero there is no maximum size imposed by the link endpoint. (AMQP Attach, max-message-size)</div></small>
+                            <hr>
+                            <label for="maxSenders">Max Senders</label>
+                            <input name="maxSenders" type="number" class="form-control" id="maxSenders" placeholder="Defaults to 2^31-1" ng-model="formData.maxSenders">
+                            <small class="form-text text-muted"><div>Maximum number of sending links that may be created on this connection.</div></small>
+                            <hr>
+                            <label for="maxReceivers">Max Receivers</label>
+                            <input name="maxReceivers" type="number" class="form-control" id="maxReceivers" placeholder="Defaults to 2^31-1" ng-model="formData.maxReceivers">
+                            <small class="form-text text-muted"><div>Maximum number of receiving links that may be created on this connection.</div></small>
+                            <hr>
+                            <label class="form-check-label">
+                                <input ng-model="formData.allowDynamicSource" name="allowDynamicSource" type="checkbox" bootstrap-switch>
+                                Allow Dynamic Source
+                            </label>
+                            <small class="form-text text-muted"><div>This connection is allowed to create receiving links using the Dynamic Link Source feature.</div></small>
+                            <hr>
+                            <label class="form-check-label">
+                                <input ng-model="formData.allowAnonymousSender" name="allowAnonymousSender" type="checkbox" bootstrap-switch>
+                                Allow Anonymous Sender
+                            </label>
+                            <small class="form-text text-muted"><div>This connection is allowed to create sending links using the Anonymous Sender feature.</div></small>
+                            <hr>
+                            <label class="form-check-label">
+                                <input ng-model="formData.allowUserIdProxy" name="allowUserIdProxy" type="checkbox" bootstrap-switch class="form-check-input">
+                                Allow User Id Proxy
+                            </label>
+                            <small class="form-text text-muted"><div>This connection is allowed to send messages with a user_id property that differs from the connection’s authenticated user id.</div></small>
+                            <hr>
+                            <label for="sources">Sources</label>
+                            <input name="sources" type="string" class="form-control" id="sources" placeholder="An empty list denies all access" ng-model="formData.sources">
+                            <small class="form-text text-muted"><div>List of Source addresses allowed when creating receiving links. This list may be expressed as a CSV string or as a list of strings. An empty list denies all access.</div></small>
+                            <hr>
+                            <label for="targets">Targets</label>
+                            <input name="targets" type="string" class="form-control" id="targets" placeholder="An empty list denies all access" ng-model="formData.targets">
+                            <small class="form-text text-muted"><div>List of Target addresses allowed when creating sending links. This list may be expressed as a CSV string or as a list of strings. An empty list denies all access.</div></small>
+                        </div>
+                        <button type="submit" class="btn btn-primary" ng-disabled="editgroup.$invalid || editgroup.$pristine">Apply</button>
+                        <button type="button" class="btn btn-warning" ng-disabled="!editgroup.$dirty" ng-click="formCancel()">Cancel</button>
+                        <button type="button" class="btn btn-danger" ng-if="formMode == 'edit'" ng-click="formDelete(formData)">Delete</button>
+                        <div ng-init="$parent.currentForm = editgroup"></div>
+                        <input type="hidden" name="type" ng-model="formData.type">
+                    </form>
+                </div>
+            </div>
+        </div>
+</div>

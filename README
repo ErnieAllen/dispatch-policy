@@ -1,0 +1,51 @@
+Qpid Dispatch policy editor UI and database server
+=============
+
+A utility to read, and update policy settings for the Qpid Dispatch Router
+
+Dependencies
+============
+
+- tested using python 2.7
+- npm to install the 3rd party javascript libraries
+  http://blog.npmjs.org/post/85484771375/how-to-install-npm
+
+Installation
+====================
+
+Front end UI:
+- install the stand-alone console. Normally this is in /usr/local/share/qpid-dispatch/stand-alone
+- create a directory under stand-alone named policy
+- cp -r the contents of the git cloned console/policy directoy to /usr/local/share/qpid-dispatch/stand-alone/policy
+- run npm install in the /usr/local/share/qpid-dispatch/stand-alone/policy directory
+
+Running
+====================
+
+- Start a router with a connector that has a role of route-container, a listener that can serve http, and a linkRoute with a pattern of #/policy
+  router {
+      mode: stand-alone
+      id: Policy
+  }
+  connector {
+      name: policy-connector
+      host: 0.0.0.0
+      port: 25674
+      role: route-container
+      saslMechanisms: ANONYMOUS
+  }
+  linkRoute {
+      pattern: #/policy
+      connection: policy-connector
+      dir: in
+  }
+  listener {
+      host: 0.0.0.0
+      port: 5674
+      http: true
+      role: normal
+      saslMechanisms: ANONYMOUS
+  }
+
+- from the /usr/local/share/qpid-dispatch/stand-alone/policy directory run ./policy.py -a 0.0.0.0:25674 -v
+- in the address bar of a browser, enter localhost:5674/policy/
