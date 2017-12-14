@@ -230,10 +230,13 @@ g.vhost.add path {
   stroke: blue;
 }
 g.node.group path  {
+  fill: #eeee66;
+}
+g.node.group.error path  {
   fill: red;
 }
 g.group.add path  {
-  stroke: red;
+  stroke: #333333;
 }
 g.node.add path {
   fill: white;
@@ -381,4 +384,113 @@ input.duplicate::-ms-input-placeholder
 
 .form-group.disabled {
     display: none;
+}
+
+#groupUsers {
+  width: 38em;
+  min-height: 10em;
+}
+
+button.btn-cell-right {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    z-index: 100;
+}
+
+button.btn-cell span {
+  font-family: FontAwesome
+}
+
+input.inline-edit {
+  float: left;
+  width: 13em !important;
+}
+
+button.btn-add {
+  margin-left: 4px;
+}
+
+select#addGroup {
+  margin-right: 0.25em;
+  height: 2.125em;
+}
+.add-user-header {
+    margin-bottom: 0.25em;
+}
+.add-user-header label {
+  margin: 0 1em;
+}
+.add-user-header label.multi {
+  margin: 0 2px;
+}
+.add-user-header button.first {
+  margin-left: 4px;
+}
+.add-user-header.last {
+  margin-bottom: 1em;
+}
+.add-user-header small {
+  display: inline-block;
+}
+.ui-grid-pager-row-count-picker {
+  display: none;
+}
+
+.ui-grid-pager-max-pages-number {
+  position: relative;
+  top: -3px;
+}
+.ui-grid-pager-max-pages-number abbr {
+    text-decoration: none;
+    position: relative;
+    top: 4px;
+}
+
+.ui-grid-pager-count abbr {
+    text-decoration: none;
+    border: 0;
+}
+
+.ui-grid-pager-panel {
+  background-color: #eaeaea;
+  height: 27px;
+}
+
+.grid-select {
+  width: 18em;
+}
+
+form[name="ugstForm"] {
+  margin-top: 1em;
+
+}
+
+.inline-select, .dropdown-multiselect {
+  display: inline-block;
+  width: 142px;
+}
+
+button.dropdown-toggle {
+  width: 144px;
+  text-align: inherit;
+}
+
+button.dropdown-toggle span.caret {
+  position: absolute;
+  right: 6px;
+  top: 7px;
+}
+
+button.btn-dot {
+  border-radius: 20px;
+  width: 1.5em;
+  height: 1.5em;
+  padding: 0;
+  margin: 0;
+}
+
+button.btn-dot span {
+  position: relative;
+  top: -2px;
 }
