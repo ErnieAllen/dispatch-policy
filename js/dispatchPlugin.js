@@ -31,7 +31,9 @@ var QDR = (function(QDR) {
    *
    * The angularjs module instance
    */
-  QDR.module = angular.module("QDR.policy", ['ngAnimate', 'ngResource', 'ngSanitize', 'ngMessages', 'ui.bootstrap']);
+  QDR.module = angular.module("QDR.policy", ['ngAnimate', 'ngResource', 'ngSanitize', 'ngMessages', 'ui.bootstrap', 'ui.grid',
+    'ui.grid.selection', 'ui.grid.autoResize', 'ui.grid.resizeColumns', 'ui.grid.saveState', 'ui.grid.pagination',
+    'angularjs-dropdown-multiselect']);
 
   Core = {
     notification: function (severity, msg) {
