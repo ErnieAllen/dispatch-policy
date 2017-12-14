@@ -26,8 +26,8 @@ var QDR = (function(QDR) {
    *
    * Controller that handles the QDR topology page
    */
-  QDR.module.controller("QDR.PolicyController", ['$scope', 'QDRService', '$location', '$timeout',
-    function($scope, QDRService, $location, $timeout) {
+  QDR.module.controller("QDR.PolicyController", ['$scope', 'QDRService', '$location', '$timeout', '$uibModal',
+    function($scope, QDRService, $location, $timeout, $uibModal) {
 
       var host = $location.host()
       var port = $location.port()
@@ -37,38 +37,41 @@ var QDR = (function(QDR) {
       var schema;   // router schema used to validate form entries and filter out UI decoration of the tree data
       var treeData; // working copy of the data needed to draw the tree
 
-      // connect to the router using the address that served this web page. then get the router schema and policy tree
-      var connectOptions = {address: host, port: port, reconnect: true, properties: {client_id: 'policy GUI'}}
-      QDRService.management.connection.addConnectAction( function () {
-        QDR.log.info("connected to dispatch network on " + host + ":" + port)
-
-        // ask management to get the schema
-        QDRService.management.getSchema(function () {
-          // once schema is available, save it
-          schema = QDRService.management.schema()
-          // add group attributes to the schema
-          add_group_schema(schema)
-          console.log("got schema")
-          // get policy from service
-          Policy.get_policy(connectOptions)
-            .then( function (response) {
-              console.log("got initial policy tree")
-              // convert policy data from service to tree needed for this page
-              var treeModel = Adapter.treeFromDB(response, schema)
-              treeData = treeModel.data
-              $scope.topLevel = treeModel.level
-              // don't show the policy part of the tree if we are only working on a vhost
-              if ($scope.topLevel === 'vhost')
-                $('.legend.policy').css('display', 'none')
-              // draw the tree
-              initTree($scope.topLevel, treeData)
-            }, function (error) {
-              Core.notification('error', error.msg)
-            })
-        })
-      })
       // connect to router. this triggers the above addConnectAction handler once connected
+      var connectOptions = {address: host, port: port, reconnect: true, properties: {client_id: 'policy GUI'}}
       QDRService.management.connection.connect(connectOptions)
+        .then(function (response) {
+          QDR.log.info("connected to dispatch network on " + host + ":" + port)
+          QDRService.management.getSchema()
+            .then( function (response) {
+              schema = response
+              // add group attributes to the schema
+              add_group_schema(schema)
+              console.log("got schema")
+              // get policy from service
+              Policy.get_policy(connectOptions)
+                .then( function (response) {
+                  console.log("got initial policy tree")
+                  // convert policy data from service to tree needed for this page
+                  var treeModel = Adapter.treeFromDB(response, schema)
+                  treeData = treeModel.data
+                  $scope.topLevel = treeModel.level
+                  // don't show the policy part of the tree if we are only working on a vhost
+                  if ($scope.topLevel === 'vhost')
+                    $('.legend.policy').css('display', 'none')
+                  // draw the tree
+                  initTree($scope.topLevel, treeData)
+                }, function (error) {
+                  console.log('unable to get policy')
+                  Core.notification('error', error.msg)
+                })
+            }, function (error) {
+              console.log('unable to get schema')
+            })
+
+        }, function (error) {
+          console.log('unable to connect')
+        })
 
       $scope.formMode = 'edit'
       $scope.showForm = 'policy'
@@ -77,14 +80,15 @@ var QDR = (function(QDR) {
       var updatePolicy = function (oldName, d) {
         var DBModel = Adapter.DBFromTree(treeData, schema)
         DBModel.update = {oldKey: oldName, newKey: d.name, type: d.type, parentKey: (d.type !== 'policy' ? d.parent.name : null)}
-        Policy.sendPolicyRequest(DBModel, "SAVE-POLICY", true)
+        return Policy.sendPolicyRequest(DBModel, "SAVE-POLICY", true)
       }
 
       // called when add form is submitted
-      var savePolicy = function () {
+      var savePolicy = function (notify) {
         var DBModel = Adapter.DBFromTree(treeData, schema)
-        Policy.sendPolicyRequest(DBModel, "SAVE-POLICY", true)
+        return Policy.sendPolicyRequest(DBModel, "SAVE-POLICY", notify)
       }
+      $scope.savePolicy = savePolicy
 
       // create the tree svg diagram
       var initTree = function (level, root) {
@@ -130,6 +134,7 @@ var QDR = (function(QDR) {
             .attr('height', theight + tmargin.top + tmargin.bottom)
           tree.size([theight, twidth])
         }
+        $scope.resizeTree = resizeTree
 
         // draw the svg using this data
         update(root);
@@ -238,6 +243,7 @@ var QDR = (function(QDR) {
             d.y0 = d.y;
           });
         }
+        $scope.update = update
 
         $scope.formData = {}
         $scope.$watch('currentForm.$dirty', function(newVal, oldVal) {
@@ -258,27 +264,6 @@ var QDR = (function(QDR) {
           }
         })
 
-        var warnPlaceholder = function (name, newVal) {
-          var element = $("input[name='"+name+"']")
-          if (!angular.isDefined(newVal)) {
-            newVal = element.val()
-          }
-          if (!angular.isDefined(newVal) || (newVal.trim() === '')) {
-            element.addClass("warning")
-          } else {
-            element.removeClass("warning")
-          }
-        }
-        $scope.$watch('formData.sources', function (newVal, oldVal) {
-          if (oldVal != newVal) {
-            warnPlaceholder('sources', newVal)
-          }
-        })
-        $scope.$watch('formData.targets', function (newVal, oldVal) {
-          if (oldVal != newVal) {
-            warnPlaceholder('targets', newVal)
-          }
-        })
         var clickon = function (d) {
           var node = d3.selectAll('.node.'+d.type).filter(function(g) {
               return d.name === g.name && (d.parent ? (d.parent.name === g.parent.name) : true)
@@ -303,7 +288,6 @@ var QDR = (function(QDR) {
               $('.all-forms :input:visible:enabled:first').focus()
             })
           }).bind(this))
-          //$scope.validateName(d.type)
           return;
 
           // collapse / expand the child nodes
@@ -322,11 +306,6 @@ var QDR = (function(QDR) {
           $scope.formData = d
           $scope.formMode = d.add ? 'add' : 'edit'
           $scope.shadowData = angular.copy(d)
-          // let new form load before accessing its elements
-          $timeout( function () {
-            warnPlaceholder('sources')
-            warnPlaceholder('targets')
-          })
         }
 
         var treeNode = function (d) {
@@ -369,21 +348,76 @@ var QDR = (function(QDR) {
               d[dattr] = d[dattr].trim()
           }
         }
+
+        // called from the form to determine if the User/Group grid should be displayed
+        $scope.groupCount = function () {
+          return Adapter.group_count(root)
+        }
+        $scope.getCSVList = function (obj, attr) {
+          if (!obj || !obj[attr])
+            return []
+          var list = obj[attr].split(',').map(function(item) {return item.trim()})
+          if (list.length === 1 && list[0] === '')
+            list = []
+          return list
+        }
+        $scope.resizeGrid = function (id, data, filters) {
+          var g = $('#' + id)
+          var headerheight = filters ? 66 : 36
+          var footerheight = 30
+          var rowheight = 30
+          var borders = 2
+          var maxItems = 10
+          g.height( Math.min(data.length * rowheight + headerheight + footerheight + borders,
+                maxItems * rowheight + headerheight + footerheight + borders))
+
+          var v = $('#' + id + ' .ui-grid-viewport')
+          v.height( Math.min(data.length * rowheight + borders, maxItems * rowheight + borders) )
+        }
+        $scope.findGroup = function (vhost, groupName) {
+          for (var i=0; i<vhost.children.length; i++) {
+            var group = vhost.children[i]
+            if (group.name === groupName) {
+              return group
+            }
+          }
+          return null
+        }
+
+        $scope.anyUsers = function () {
+          // only the add group
+          if ($scope.groupCount() <= 1)
+            return false
+          var base = root
+          if (base.type == 'vhost') {
+            base = {children: [root]}
+          }
+          // for each vhost
+          for (var i=0; i<base.children.length; i++) {
+            // for each group in this vhost
+            for (var j=0; j<base.children[i].children.length; j++) {
+              var users = $scope.getCSVList(base.children[i].children[j], 'users')
+              if (users.length)
+                return true
+            }
+          }
+        }
+
         // the delete button was clicked
-        $scope.formDelete = function (d) {
-          var req = {type: $scope.showForm}
-          if ($scope.showForm === 'vhost')
-            req.vhost = $scope.formData['name']
-          else if ($scope.showForm === 'group') {
-            req.vhost = $scope.formData.parent.name
-            req.group = $scope.formData['name']
+        $scope.formDelete = function (d, form) {
+          var req = {type: form}
+          if (form === 'vhost')
+            req.vhost = d['name']
+          else if (form === 'group') {
+            req.vhost = d.parent.name
+            req.group = d['name']
           }
           Policy.sendPolicyRequest(req, "DELETE", false)
             .then( function (response) {
               if (response != "OK") {
                 Core.notification("error", "delete failed: " + response)
               } else
-                Core.notification("success", $scope.showForm + " " + d.name + " deleted")
+                Core.notification("success", form + " " + d.name + " deleted")
                 // find this tree node in the parent's children list
                 for (var i=0; i<d.parent.children.length; i++) {
                   if (d.name === d.parent.children[i].name) {
@@ -416,7 +450,7 @@ var QDR = (function(QDR) {
             if (oldName !== d.name) {
               updatePolicy(oldName, d)
             } else
-              savePolicy()
+              savePolicy(true)
           })
         }
         // the edit form was submitted on a new entity
@@ -450,7 +484,7 @@ var QDR = (function(QDR) {
               clickon(n.children[0])
             }
             // save the data
-            savePolicy()
+            savePolicy(true)
           })
         }
 
@@ -482,11 +516,67 @@ var QDR = (function(QDR) {
           $scope.defaultGroup = (newVal === '$default')
         })
       }
+
+      var enterNewUser = function (groups, vhost) {
+        return new Promise (function (resolve, reject) {
+          var d = $uibModal.open({
+            backgrop: true,
+            keyboard: true,
+            backdropClick: true,
+            templateUrl: "addUser.html",
+            controller: "QDR.addUser",
+            resolve: {
+              groups: function () { return groups},
+              vhost: function () { return vhost}
+            }
+          }).result.then( function (result) {
+            if (result.ok)
+              resolve({user: result.user, group: result.group})
+            else
+              reject(Error('cancelled'))
+          })
+        })
+      }
+
     }
-  ]);
+  ])
+
+
+
+  QDR.module.controller('QDR.addUser', function ($scope, vhost, groups) {
+    $scope.status = {
+      isCustomHeaderOpen: false,
+      isFirstOpen: true,
+      isFirstDisabled: false
+    };
+    $scope.vhost = vhost.name
+    $scope.dupUserMsg = ''  // set by validator
+    $scope.formData = {id: vhost.id, parent: vhost}
+    $scope.data = {
+      addUser: '',
+      availableOptions: []
+    };
+    for (var i=0; i<groups.length; i++) {
+      $scope.data.availableOptions.push({id: i, name: groups[i]})
+    }
+    $scope.data.selectedOption = groups.length > 0 ? $scope.data.availableOptions[0] : {}
+
+    $scope.submit = function () {
+      $uibModalInstance.close({
+        ok: true,
+        group: $scope.data.selectedOption.name,
+        user: $scope.data.addUser
+      });
+    }
+    $scope.cancel = function () {
+      $uibModalInstance.close({});
+    }
+  })
+
 
   return QDR;
 }(QDR || {}));
+
 
   // Custom form validator to prevent sibling vhosts and groups from having the same name
   // This is used by the html form on an input element like so: <input duplicate-sibling-name ... />
@@ -524,17 +614,19 @@ var QDR = (function(QDR) {
       restrict: 'A',
       require: 'ngModel',
       link: function(scope, element, attr, ngModel) {
+        var sc = scope.formData ? scope : scope.$parent
         var msg = function (group, user, same) {
           if (!same)
-            scope.$parent.dupUserMsg = "User can be in only one group for this vhost. The user "+user+" was also found in "+group+"."
+            sc.dupUserMsg = "The user "+user+" is also in "+group+"."
           else
-            scope.$parent.dupUserMsg = "The user "+user+" appears in this list multiple times."
-
+            sc.dupUserMsg = "The user "+user+" appears in this list multiple times."
         }
         var cmp = function (root, users, id, i) {
           if (!angular.isDefined(root.children[i].users))
             return false
-          var nusers = root.children[i].users.python_split(' ')
+          var nusers = root.children[i].users.split(',').map(function(item) {return item.trim()})
+          if (nusers.length === 1 && nusers[0] === '')
+            nusers = []
           var found = false
           for (var j=0; j<users.length; j++) {
             found = nusers.some ( function (nuser) {
@@ -552,12 +644,13 @@ var QDR = (function(QDR) {
         }
 
         ngModel.$validators.duplicateUser = function(modelValue, viewValue) {
-          var root = scope.$parent.formData.parent
+          var root = sc.formData.parent
           var notDuplicate = true;
+          sc.dupUserMsg = ''
           if (modelValue && modelValue.trim() !== '') {
-            var id = scope.$parent.formData.id
+            var id = sc.formData.id
             // make sure there are no duplicated user names in this group
-            var users = modelValue.python_split(' ')
+            var users = modelValue.split(',').map(function(item) {return item.trim()})
             for (var i=0; i<root.children.length; i++) {
               // skip self
               if (root.children[i].id !== id) {
