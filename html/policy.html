@@ -101,12 +101,74 @@ under the License.
                                 Allow unknown user
                             </label>
                         </div>
+
                         <button type="submit" class="btn btn-primary" ng-disabled="editvhost.$invalid || editvhost.$pristine">Apply</button>
                         <button type="button" class="btn btn-warning" ng-disabled="!editvhost.$dirty" ng-click="formCancel()">Cancel</button>
-                        <button type="button" class="btn btn-danger" ng-if="formMode === 'edit' && topLevel === 'policy'" ng-click="formDelete(formData)">Delete</button>
+                        <button type="button" class="btn btn-danger" ng-if="formMode === 'edit' && topLevel === 'policy'" ng-click="formDelete(formData, showForm)">Delete</button>
                         <div ng-init="$parent.currentForm = editvhost"></div>
                         <input type="hidden" name="type" ng-model="formData.type">
                     </form>
+                    <form name="ugstForm">
+                        <div class="form-group">
+                            <uib-accordion close-others="true">
+                                <div ng-controller="QDR.addUserGroupCtrl">
+                                    <div uib-accordion-group class="panel-default" heading="Users/Groups" is-open="status.isUserOpen">
+                                        <div ng-include src="addGroupTmpl.html"></div>
+                                        <ng-include src="'addGroupTmpl.html'"></ng-include>
+                                        <div class="add-user-header last" ng-if="groupCount() > 1">
+                                            <input name="addUser"
+                                                   type="text"
+                                                   class="form-control inline-edit"
+                                                   placeholder="Add a user"
+                                                   ng-model="data.addUser"
+                                                   ng-keydown="$event.keyCode === 13 && addUserToGroup()"
+                                                   duplicate-user
+                                            />
+                                            <label for="addGroup">to group</label>
+                                            <select name="addGroup" id="addGroup"
+                                                    ng-options="option.name for option in data.availableOptions"
+                                                    ng-model="data.selectedOption">
+                                            </select>
+                                            <button type="button"  ng-click="addUserToGroup()" class="btn btn-primary" ng-disabled="ugstForm.addUser.$modelValue.length == 0 || ugstForm.addUser.$invalid">Add</button>
+                                            <small ng-messages="ugstForm.addUser.$error" role="alert">
+                                                <div ng-message="duplicateUser">{{dupUserMsg}}</div>
+                                            </small>
+                                        </div>
+                                        <div ng-if="anyUsers()" id="groupUsers" ui-grid="userGrid" class="grid" ui-grid-pagination ></div>  <!--ui-grid-auto-resize -->
+                                    </div>
+                                </div>
+                                <div uib-accordion-group class="panel-default" heading="Sources/Targets">
+                                    <div ng-controller="QDR.sourceCtrl">
+                                        <ng-include src="'addGroupTmpl.html'"></ng-include>
+                                        <div class="add-user-header last">
+                                            <input name="addAddress"
+                                                   type="text"
+                                                   class="form-control inline-edit"
+                                                   placeholder="Add an address"
+                                                   ng-model="data.addAddress"
+                                                   ng-keydown="$event.keyCode === 13 && addAddress()"
+                                            />
+                                            <button title="Add to sources" type="button" ng-class="{'btn-primary': data.toSource}" class="btn btn-dot first" ng-click="data.toSource = !data.toSource">
+                                                <span>S</span>
+                                            </button>
+                                            <button title="Add to targets" type="button" ng-class="{'btn-primary': data.toTarget}" class="btn btn-dot" ng-click="data.toTarget = !data.toTarget">
+                                                <span>T</span>
+                                            </button>
+
+                                            <label class="multi" for="groupMultiSelect">to group(s)</label>
+                                            <span class="inline-select" id="groupMultiSelect" ng-dropdown-multiselect options="groupData" selected-model="groupModel" extra-settings="groupSettings"></span>
+                                            <button type="button"  ng-click="addAddress()" class="btn btn-primary btn-add" ng-disabled="ugstForm.addAddress.$modelValue.length == 0 || ugstForm.addAddress.$invalid || (!data.toSource && !data.toTarget)">Add</button>
+                                            <small ng-messages="ugstForm.addAddress.$error" role="alert">
+                                                <div ng-message="duplicateSource">{{dupSourceMsg}}</div>
+                                            </small>
+                                        </div>
+                                        <div ng-if="anyAddresses()" id="sourceGrid" ui-grid="sourceGrid" class="grid" ui-grid-pagination ></div>
+                                    </div>
+                                </div>
+                            </uib-accordion>
+                        </div>
+                    </form>
+
                 </div>
                 <div ng-if="showForm === 'group'">
                     <h2 ng-show="formMode === 'edit'">{{currentForm.$dirty ? "Editing " : ""}}group {{shadowData.name}}</h2>
@@ -152,12 +214,11 @@ under the License.
                                 <div ng-message="required">Required if name is not $default</div>
                                 <div ng-message="duplicateUser">{{dupUserMsg}}</div>
                             </small>
-
                         </div>
                         <div class="form-group">
                             <h3>Connection Restrictions</h3>
                             <label for="remoteHosts">Remote Hosts</label>
-                            <input name="remoteHosts" type="text" class="form-control" id="remoteHosts" placeholder="An empty list denies all access" ng-model="formData.remoteHosts">
+                            <input name="remoteHosts" type="text" class="form-control" id="remoteHosts" placeholder="An empty list denies all access" ng-class="{'warning': editgroup.remoteHosts.$madelValue == null}" ng-model="formData.remoteHosts">
                             <small class="form-text text-muted"><div>List of remote hosts from which the users may connect. List values may be host names, numeric IP addresses, numeric IP address ranges, or the wildcard *. An empty list denies all access.</div></small>
                         </div>
                         <div class="form-group">
@@ -209,16 +270,16 @@ under the License.
                             <small class="form-text text-muted"><div>This connection is allowed to send messages with a user_id property that differs from the connection’s authenticated user id.</div></small>
                             <hr>
                             <label for="sources">Sources</label>
-                            <input name="sources" type="string" class="form-control" id="sources" placeholder="An empty list denies all access" ng-model="formData.sources">
+                            <input name="sources" type="string" class="form-control" id="sources" placeholder="An empty list denies all access" ng-model="formData.sources" ng-class="{'warning': editgroup.sources.$madelValue == null}" >
                             <small class="form-text text-muted"><div>List of Source addresses allowed when creating receiving links. This list may be expressed as a CSV string or as a list of strings. An empty list denies all access.</div></small>
                             <hr>
                             <label for="targets">Targets</label>
-                            <input name="targets" type="string" class="form-control" id="targets" placeholder="An empty list denies all access" ng-model="formData.targets">
+                            <input name="targets" type="string" class="form-control" id="targets" placeholder="An empty list denies all access" ng-model="formData.targets"  ng-class="{'warning': editgroup.targets.$madelValue == null}" >
                             <small class="form-text text-muted"><div>List of Target addresses allowed when creating sending links. This list may be expressed as a CSV string or as a list of strings. An empty list denies all access.</div></small>
                         </div>
                         <button type="submit" class="btn btn-primary" ng-disabled="editgroup.$invalid || editgroup.$pristine">Apply</button>
                         <button type="button" class="btn btn-warning" ng-disabled="!editgroup.$dirty" ng-click="formCancel()">Cancel</button>
-                        <button type="button" class="btn btn-danger" ng-if="formMode == 'edit'" ng-click="formDelete(formData)">Delete</button>
+                        <button type="button" class="btn btn-danger" ng-if="formMode == 'edit'" ng-click="formDelete(formData, showForm)">Delete</button>
                         <div ng-init="$parent.currentForm = editgroup"></div>
                         <input type="hidden" name="type" ng-model="formData.type">
                     </form>
@@ -226,3 +287,64 @@ under the License.
             </div>
         </div>
 </div>
+
+<script type="text/ng-template" id="srcTrgTmpl.html">
+    <div class="ui-grid-cell-contents">
+        <button title="{{grid.appScope.onOff(row, col, 's')}}" type="button" ng-class="{'btn-primary': grid.appScope.getClass(row, col, 's')}" class="btn btn-dot" ng-click="grid.appScope.toggle(row, col, 's')">
+            <span>S</span>
+        </button>
+        <button title="{{grid.appScope.onOff(row, col, 't')}}" type="button" ng-class="{'btn-primary': grid.appScope.getClass(row, col, 't')}" class="btn btn-dot" ng-click="grid.appScope.toggle(row, col, 't')">
+            <span>T</span>
+        </button>
+        <div style="visibility: hidden;">{{grid.getCellValue(row, col)}}</div>
+    </div>
+</script>
+<script type="text/ng-template" id="userTemplate.html">
+    <div class="ui-grid-cell-contents">
+        <button title="delete user" type="button" class="btn btn-danger btn-cell" ng-click="grid.appScope.deleteUser(row)">
+            <span class="fa-close"></span>
+        </button>
+        {{grid.getCellValue(row, col)}}
+    </div>
+</script>
+<script type="text/ng-template" id="groupTemplate.html">
+    <div class="ui-grid-cell-contents">
+        <select ng-options="option.name for option in grid.appScope.data.availableOptions track by option.id"
+                ng-model="grid.appScope.chosenOption[row.entity.user]"
+                ng-change="grid.appScope.doChangeGroup(row)"
+                class="grid-select"
+        ></select>
+    </div>
+</script>
+
+<script type="text/ng-template" id="deleteGroup.html">
+    <form name="del" ng-submit="submit()">
+        <div class="modal-header">
+            <h4>Removing the last user in group {{group}}</h4>
+        </div>
+        <div class="modal-body">
+            <p>This will remove the last user from the group {{group}}. Every group is required to have at least one user.</p>
+            <h4>Do you want to delete the group?</h4>
+        </div>
+        <div class="modal-footer">
+            <button type="submit" class="btn btn-primary">Yes</button>
+            <button type="button" class="btn btn-warning" ng-click="cancel()">No</button>
+        </div>
+    </form>
+</script>
+
+<script type="text/ng-template" id="addGroupTmpl.html">
+    <div class="add-user-header" ng-controller="QDR.addGroupCtrl">
+        <input name="addAGroup"
+               type="text"
+               class="form-control inline-edit"
+               placeholder="Add a group"
+               ng-model="data.addAGroup"
+               ng-keydown="$event.keyCode === 13 && addGroup()"
+        />
+        <button type="button" ng-click="addGroup()" class="btn btn-primary btn-add" ng-disabled="ugstForm.addAGroup1.$modelValue.length == 0">Add</button>
+        <small>
+            <div>{{dupGroupMsg}}</div>
+        </small>
+    </div>
+</script>
