@@ -108,7 +108,7 @@ under the License.
                         <div ng-init="$parent.currentForm = editvhost"></div>
                         <input type="hidden" name="type" ng-model="formData.type">
                     </form>
-                    <form name="ugstForm"  ng-keydown="$event.keyCode === 27 && escapePressed()">
+                    <form name="ugstForm"  ng-keydown="$event.keyCode === 27 && escapePressed()" ng-if="!formData.add">
                         <div class="form-group">
                             <uib-accordion> <!-- close-others="true" -->
                                 <div ng-controller="QDR.addUserGroupCtrl">
