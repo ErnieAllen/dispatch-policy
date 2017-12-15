@@ -22,9 +22,7 @@ under the License.
 var QDR = (function(QDR) {
 
   /**
-   * @method TopologyController
-   *
-   * Controller that handles the QDR topology page
+   * Controller that handles the policy editor main page
    */
   QDR.module.controller("QDR.PolicyController", ['$scope', 'QDRService', '$location', '$timeout', '$uibModal',
     function($scope, QDRService, $location, $timeout, $uibModal) {
