@@ -27,21 +27,22 @@ var Policy_wrapper = function (QDRService, $location) {
 
     // connect to the policy server and request the policy for the current address (vhost or root policy)
     policy.get_policy = function (connectOptions) {
-      var p = new Promise( function (resolve, reject) {
-        QDRService.policy.connection.addConnectAction( function () {
-          policy.sendPolicyRequest([], 'GET-POLICY', false)
-            .then( function (response) {
-              resolve(response)
-            }, function (error) {
-              reject(error)
-            })
-        })
+      return new Promise( function (resolve, reject) {
         connectOptions.properties = {client_id: 'policy linkRoute'}
         connectOptions.sender_address = address
         connectOptions.hostname = $location.host()  // allow multi-tenancy
         QDRService.policy.connection.connect(connectOptions)
+          .then(function (results) {
+            policy.sendPolicyRequest([], 'GET-POLICY', false)
+              .then( function (response) {
+                resolve(response)
+              }, function (error) {
+                reject(error)
+              })
+          }, function (error) {
+            reject(error)
+          })
       })
-      return p
     }
 
     // send a policy request and Handle notification message if requested
