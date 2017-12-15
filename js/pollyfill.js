@@ -1,7 +1,5 @@
 /*
 
-Copyright Redhat Inc. 2017
-
 Licensed to the Apache Software Foundation (ASF) under one
 or more contributor license agreements.  See the NOTICE file
 distributed with this work for additional information
@@ -162,9 +160,4 @@ if (!Array.prototype.findIndex) {
       return -1;
     }
   });
-}
-
-// split while collapsing multiple white space characters into one (the way python does it)
-String.prototype.python_split = function (s) {
-  return this.split(/(\s+)/).filter( function(e) { return e.trim().length > 0; } );
 }
