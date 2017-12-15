@@ -49,3 +49,7 @@ Running
 
 - from the /usr/local/share/qpid-dispatch/stand-alone/policy directory run ./policy.py -a 0.0.0.0:25674 -v
 - in the address bar of a browser, enter localhost:5674/policy/
+
+Note: To enable multi-tenancy, add multiTenant: true to the listener. This will restrict the policy editor 
+to the domain that serves the page. For example, if the page is served from redhatters.com:5674/policy/ 
+then the policy editor will only allow editing the data in the redhatters.com vhost.
