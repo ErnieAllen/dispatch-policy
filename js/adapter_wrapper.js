@@ -84,7 +84,7 @@ var Adapter_wrapper = function (host) {
           for (var group in d['groups']) {
             this.children.push(new Group(d[attr][group], group, this.name))
           }
-          this.children.push(new Group({add: true}, '', this.name))
+          this.children.push(new Group({add: true, remoteHosts: '*', sources: '*', targets: '*'}, '', this.name))
         } else
           this[attr] = d[attr]
       }
