@@ -311,6 +311,10 @@ span.form-dirty {
   padding: 2em;
 }
 
+.all-forms.vhost {
+  margin-left: 36em;
+}
+
 .all-forms h2 {
   margin-top: 4px;
 }
@@ -429,6 +433,7 @@ select#addGroup {
 }
 .add-user-header.last {
   margin-bottom: 1em;
+  /*height: 2em; */
 }
 .add-user-header small {
   display: inline-block;
