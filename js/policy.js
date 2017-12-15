@@ -75,6 +75,9 @@ var QDR = (function(QDR) {
 
       $scope.formMode = 'edit'
       $scope.showForm = 'policy'
+      $scope.data = {
+        dupUserMsg: ''
+      }
 
       // called when edit form is submitted
       var updatePolicy = function (oldName, d) {
@@ -329,6 +332,7 @@ var QDR = (function(QDR) {
           d.name = ""
           d.type = "group"
           d.add = true
+          d.remoteHosts = '*'
         }
 
         var revert = function (target, source) {
@@ -516,63 +520,17 @@ var QDR = (function(QDR) {
           $scope.defaultGroup = (newVal === '$default')
         })
       }
-
-      var enterNewUser = function (groups, vhost) {
-        return new Promise (function (resolve, reject) {
-          var d = $uibModal.open({
-            backgrop: true,
-            keyboard: true,
-            backdropClick: true,
-            templateUrl: "addUser.html",
-            controller: "QDR.addUser",
-            resolve: {
-              groups: function () { return groups},
-              vhost: function () { return vhost}
-            }
-          }).result.then( function (result) {
-            if (result.ok)
-              resolve({user: result.user, group: result.group})
-            else
-              reject(Error('cancelled'))
-          })
+      $scope.$on('duplicateUser', function (event, msg) {
+        $timeout( function () {
+          $scope.data.dupUserMsg = msg
         })
+      })
+      $scope.escapePressed = function () {
+        $scope.formCancel()
       }
 
     }
   ])
-
-
-
-  QDR.module.controller('QDR.addUser', function ($scope, vhost, groups) {
-    $scope.status = {
-      isCustomHeaderOpen: false,
-      isFirstOpen: true,
-      isFirstDisabled: false
-    };
-    $scope.vhost = vhost.name
-    $scope.dupUserMsg = ''  // set by validator
-    $scope.formData = {id: vhost.id, parent: vhost}
-    $scope.data = {
-      addUser: '',
-      availableOptions: []
-    };
-    for (var i=0; i<groups.length; i++) {
-      $scope.data.availableOptions.push({id: i, name: groups[i]})
-    }
-    $scope.data.selectedOption = groups.length > 0 ? $scope.data.availableOptions[0] : {}
-
-    $scope.submit = function () {
-      $uibModalInstance.close({
-        ok: true,
-        group: $scope.data.selectedOption.name,
-        user: $scope.data.addUser
-      });
-    }
-    $scope.cancel = function () {
-      $uibModalInstance.close({});
-    }
-  })
-
 
   return QDR;
 }(QDR || {}));
@@ -614,15 +572,16 @@ var QDR = (function(QDR) {
       restrict: 'A',
       require: 'ngModel',
       link: function(scope, element, attr, ngModel) {
-        var sc = scope.formData ? scope : scope.$parent
         var msg = function (group, user, same) {
-          if (!same)
-            sc.dupUserMsg = "The user "+user+" is also in "+group+"."
-          else
-            sc.dupUserMsg = "The user "+user+" appears in this list multiple times."
+          if (!same) {
+            scope.$emit('duplicateUser', "The user "+user+" is also in "+group+".")
+          }
+          else {
+            scope.$emit('duplicateUser', "The user "+user+" appears in this list multiple times.")
+          }
         }
         var cmp = function (root, users, id, i) {
-          if (!angular.isDefined(root.children[i].users))
+          if (!angular.isDefined(root.children[i].users) || !root.children[i].users)
             return false
           var nusers = root.children[i].users.split(',').map(function(item) {return item.trim()})
           if (nusers.length === 1 && nusers[0] === '')
@@ -644,29 +603,31 @@ var QDR = (function(QDR) {
         }
 
         ngModel.$validators.duplicateUser = function(modelValue, viewValue) {
-          var root = sc.formData.parent
+          var root = scope.$parent.formData.parent
           var notDuplicate = true;
-          sc.dupUserMsg = ''
+          scope.dupUserMsg = ''
           if (modelValue && modelValue.trim() !== '') {
-            var id = sc.formData.id
+            var id = scope.$parent.formData.id
             // make sure there are no duplicated user names in this group
             var users = modelValue.split(',').map(function(item) {return item.trim()})
-            for (var i=0; i<root.children.length; i++) {
-              // skip self
-              if (root.children[i].id !== id) {
-                if (cmp(root, users, id, i)) {
-                  notDuplicate = false
-                  break
+            if (root.children) {
+              for (var i=0; i<root.children.length; i++) {
+                // skip self
+                if (root.children[i].id !== id) {
+                  if (cmp(root, users, id, i)) {
+                    notDuplicate = false
+                    break
+                  }
+                } else {
+                  // prevent same name appearing twice in this edit field
+                  notDuplicate = !users.some(function(user, idx){
+                      if (users.indexOf(user, idx+1) !== -1) {
+                        msg(root.children[i].name, user, true)
+                        return true
+                      }
+                      return false
+                  });
                 }
-              } else {
-                // prevent same name appearing twice in this edit field
-                notDuplicate = !users.some(function(user, idx){
-                    if (users.indexOf(user, idx+1) !== -1) {
-                      msg(root.children[i].name, user, true)
-                      return true
-                    }
-                    return false
-                });
               }
             }
           }
