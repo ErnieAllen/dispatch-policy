@@ -29,10 +29,10 @@ under the License.
     </div>
         <div class="policy-container">
             <div id="topology"></div>
-            <div class="all-forms">
+            <div class="all-forms" ng-class="{'vhost': topLevel === 'vhost'}">
                 <div ng-if="showForm === 'policy'">
                     <h2 ng-show="formMode === 'edit'">{{currentForm.$dirty ? "Editing " : ""}}Policy</h2>
-                    <form name="editpolicy" ng-submit="formEditOK(formData, editpolicy)">
+                    <form name="editpolicy" ng-submit="formEditOK(formData, editpolicy)" ng-keydown="$event.keyCode === 27 && escapePressed()">
                         <div class="form-group">
                             <label for="maxConnections">Max Connections</label>
                             <input name="maxConnections" type="number" class="form-control" id="maxPolicyConnections" placeholder="Defaults to 65535" ng-model="formData.maxConnections">
@@ -60,7 +60,7 @@ under the License.
                 <div ng-if="showForm === 'vhost'">
                     <h2 ng-show="formMode === 'edit'">{{currentForm.$dirty ? "Editing " : ""}}Vhost {{shadowData.name}}</h2>
                     <h2 ng-show="formMode === 'add'">Adding new vhost</h2>
-                    <form name="editvhost" ng-submit="formEditOK(formData, editvhost)">
+                    <form name="editvhost" ng-submit="formEditOK(formData, editvhost)"  ng-keydown="$event.keyCode === 27 && escapePressed()">
                         <div class="form-group" ng-class="{'disabled': topLevel === 'vhost'}">
                             <label for="vhostname">Vhost ID</label>
                             <input
@@ -108,13 +108,12 @@ under the License.
                         <div ng-init="$parent.currentForm = editvhost"></div>
                         <input type="hidden" name="type" ng-model="formData.type">
                     </form>
-                    <form name="ugstForm">
+                    <form name="ugstForm"  ng-keydown="$event.keyCode === 27 && escapePressed()">
                         <div class="form-group">
-                            <uib-accordion close-others="true">
+                            <uib-accordion> <!-- close-others="true" -->
                                 <div ng-controller="QDR.addUserGroupCtrl">
                                     <div uib-accordion-group class="panel-default" heading="Users/Groups" is-open="status.isUserOpen">
-                                        <div ng-include src="addGroupTmpl.html"></div>
-                                        <ng-include src="'addGroupTmpl.html'"></ng-include>
+                                        <ng-include onload="field='grp'" src="'addGroupTmpl.html'"></ng-include>
                                         <div class="add-user-header last" ng-if="groupCount() > 1">
                                             <input name="addUser"
                                                    type="text"
@@ -129,17 +128,17 @@ under the License.
                                                     ng-options="option.name for option in data.availableOptions"
                                                     ng-model="data.selectedOption">
                                             </select>
-                                            <button type="button"  ng-click="addUserToGroup()" class="btn btn-primary" ng-disabled="ugstForm.addUser.$modelValue.length == 0 || ugstForm.addUser.$invalid">Add</button>
+                                            <button type="button" ng-click="addUserToGroup()" class="btn btn-primary" ng-disabled="ugstForm.addUser.$modelValue.length == 0 || ugstForm.addUser.$invalid">Add</button>
                                             <small ng-messages="ugstForm.addUser.$error" role="alert">
-                                                <div ng-message="duplicateUser">{{dupUserMsg}}</div>
+                                                <div ng-message="duplicateUser">{{data.dupUserMsg}}</div>
                                             </small>
                                         </div>
                                         <div ng-if="anyUsers()" id="groupUsers" ui-grid="userGrid" class="grid" ui-grid-pagination ></div>  <!--ui-grid-auto-resize -->
                                     </div>
                                 </div>
-                                <div uib-accordion-group class="panel-default" heading="Sources/Targets">
-                                    <div ng-controller="QDR.sourceCtrl">
-                                        <ng-include src="'addGroupTmpl.html'"></ng-include>
+                                <div ng-controller="QDR.sourceCtrl">
+                                    <div uib-accordion-group class="panel-default" heading="Sources/Targets">
+                                        <ng-include onload="field='src'" src="'addGroupTmpl.html'"></ng-include>
                                         <div class="add-user-header last">
                                             <input name="addAddress"
                                                    type="text"
@@ -173,7 +172,7 @@ under the License.
                 <div ng-if="showForm === 'group'">
                     <h2 ng-show="formMode === 'edit'">{{currentForm.$dirty ? "Editing " : ""}}group {{shadowData.name}}</h2>
                     <h2 ng-show="formMode === 'add'">Adding new group</h2>
-                    <form name="editgroup" ng-submit="formEditOK(formData, editgroup)">
+                    <form name="editgroup" ng-submit="formEditOK(formData, editgroup)"  ng-keydown="$event.keyCode === 27 && escapePressed()">
                         <div class="form-group">
                             <label for="groupname">Group Name</label>
                             <input
@@ -212,7 +211,7 @@ under the License.
                             </small>
                             <small ng-messages="editgroup.users.$error" role="alert">
                                 <div ng-message="required">Required if name is not $default</div>
-                                <div ng-message="duplicateUser">{{dupUserMsg}}</div>
+                                <div ng-message="duplicateUser">{{data.dupUserMsg}}</div>
                             </small>
                         </div>
                         <div class="form-group">
@@ -335,16 +334,17 @@ under the License.
 
 <script type="text/ng-template" id="addGroupTmpl.html">
     <div class="add-user-header" ng-controller="QDR.addGroupCtrl">
-        <input name="addAGroup"
+        <input name="{{field}}"
                type="text"
                class="form-control inline-edit"
                placeholder="Add a group"
                ng-model="data.addAGroup"
                ng-keydown="$event.keyCode === 13 && addGroup()"
+               duplicate-sibling-name
         />
-        <button type="button" ng-click="addGroup()" class="btn btn-primary btn-add" ng-disabled="ugstForm.addAGroup1.$modelValue.length == 0">Add</button>
-        <small>
-            <div>{{dupGroupMsg}}</div>
+        <button type="button" ng-click="addGroup()" class="btn btn-primary btn-add" ng-disabled="ugstForm[field].$modelValue.length == 0 || !ugstForm[field].$valid">Add</button>
+        <small ng-messages="ugstForm[field].$error" role="alert">
+            <div ng-message="duplicateName">Group name must be unique.</div>
         </small>
     </div>
 </script>
