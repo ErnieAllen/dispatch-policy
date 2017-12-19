@@ -334,26 +334,26 @@ span.form-dirty {
   margin-bottom: 4px;
 }
 
-input.warning::-webkit-input-placeholder,
+span.warning+input::-webkit-input-placeholder,
 input.ng-invalid-required::-webkit-input-placeholder,
 input.duplicate::-webkit-input-placeholder
 { /* WebKit, Blink, Edge */
     color:    red;
 }
-input.warning::-moz-placeholder,
+span.warning+input::-moz-placeholder,
 input.ng-invalid-required::-moz-placeholder,
 input.duplicate::-moz-placeholder
 { /* Mozilla Firefox 19+ */
    color:    red;
    opacity:  1;
 }
-input.warning:-ms-input-placeholder,
+span.warning+input:-ms-input-placeholder,
 input.ng-invalid-required:-ms-input-placeholder,
 input.duplicate:-ms-input-placeholder
 { /* Internet Explorer 10-11 */
    color:    red;
 }
-input.warning::-ms-input-placeholder,
+span.warning+input::-ms-input-placeholder,
 input.ng-invalid-required::-ms-input-placeholder,
 input.duplicate::-ms-input-placeholder
 { /* Microsoft Edge */
@@ -421,6 +421,9 @@ select#addGroup {
 }
 .add-user-header {
     margin-bottom: 0.25em;
+}
+.add-user-header * {
+  vertical-align: top;
 }
 .add-user-header label {
   margin: 0 1em;
