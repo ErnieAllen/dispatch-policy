@@ -23,7 +23,6 @@
     "angular-sanitize": "^1.6.6",
     "angular-ui-bootstrap": "^2.5.6",
     "angular-ui-grid": "^4.0.11",
-    "angularjs-dropdown-multiselect": "^2.0.0-beta.10",
     "bluebird": "^3.5.1",
     "d3": "^3.5.17",
     "dispatch-management": "^0.1.6",
@@ -32,7 +31,8 @@
     "jquery-ui-dist": "^1.12.1",
     "jquery-ui-themes": "^1.12.0",
     "notifyjs-browser": "^0.4.2",
-    "patternfly": "^3.28.1"
+    "patternfly": "^3.28.1",
+    "ui-select": "^0.19.8"
   },
   "devDependencies": {},
   "repository": {

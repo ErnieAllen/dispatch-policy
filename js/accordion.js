@@ -57,12 +57,9 @@ var QDR = (function(QDR) {
     var vhost = $scope.formData
     $scope.formData = {id: vhost.id, parent: vhost}
     // multi-select dropdown list
-    $scope.groupModel = []
-    $scope.groupData = []
-    $scope.groupSettings = {
-      showCheckAll: false,
-      showUncheckAll: false,
-      smartButtonMaxItems: 2,
+    $scope.multiSelect = {
+      groupModel: [],
+      groupData: []
     }
     // source edit box
     $scope.data = {
@@ -101,7 +98,7 @@ var QDR = (function(QDR) {
 
     $scope.addAddress = function () {
       var address = $scope.data.addAddress
-      var groupNames = $scope.groupModel.map( function (gm) { return gm.label})
+      var groupNames = $scope.multiSelect.groupModel
       // for each selected group, add this source
       groupNames.forEach( function (groupName) {
         group = $scope.findGroup(vhost, groupName)
@@ -162,24 +159,9 @@ var QDR = (function(QDR) {
     var getGroupList = function () {
       return vhost.children.filter( function (group) { return group.name && !group.add} )
     }
-    var generateGroupData = function (groups) {
-      $scope.groupData = []
-      groups.forEach( function (group, i) {
-        $scope.groupData.push({id: i, label: group.name})
-      })
-    }
-    var updateGroupModel = function () {
-      var curGroupNames = $scope.groupModel.map( function (gm) { return gm.label})
-      $scope.groupModel = []
-      $scope.groupData.forEach( function (data) {
-        if (curGroupNames.indexOf(data.label) >= 0)
-          $scope.groupModel.push(data)
-      })
-    }
     var formChanged = function () {
       var groups = getGroupList()
-      generateGroupData(groups)
-      updateGroupModel()
+      $scope.multiSelect.groupData = groups.map( function (g) {return g.name})
       generateColumns(groups)
       var sources = getFieldList(groups, 'sources')
       var targets = getFieldList(groups, 'targets')

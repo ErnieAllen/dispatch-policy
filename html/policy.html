@@ -139,7 +139,7 @@ under the License.
                                 <div ng-controller="QDR.sourceCtrl">
                                     <div uib-accordion-group class="panel-default" heading="Sources/Targets">
                                         <ng-include onload="field='src'" src="'addGroupTmpl.html'"></ng-include>
-                                        <div class="add-user-header last">
+                                        <div class="add-user-header">
                                             <input name="addAddress"
                                                    type="text"
                                                    class="form-control inline-edit"
@@ -154,8 +154,14 @@ under the License.
                                                 <span>T</span>
                                             </button>
 
-                                            <label class="multi" for="groupMultiSelect">to group(s)</label>
-                                            <span class="inline-select" id="groupMultiSelect" ng-dropdown-multiselect options="groupData" selected-model="groupModel" extra-settings="groupSettings"></span>
+                                            <label class="multi">to group(s)</label>
+                                            <ui-select multiple ng-model="multiSelect.groupModel" theme="bootstrap" title="Select one or more groups" class="inline-select">
+                                                <ui-select-match placeholder="Select a group">{{$item}}</ui-select-match>
+                                                <ui-select-choices repeat="d in multiSelect.groupData | filter:$select.search">
+                                                    {{d}}
+                                                </ui-select-choices>
+                                            </ui-select>
+
                                             <button type="button"  ng-click="addAddress()" class="btn btn-primary btn-add" ng-disabled="ugstForm.addAddress.$modelValue.length == 0 || ugstForm.addAddress.$invalid || (!data.toSource && !data.toTarget)">Add</button>
                                             <small ng-messages="ugstForm.addAddress.$error" role="alert">
                                                 <div ng-message="duplicateSource">{{dupSourceMsg}}</div>
@@ -172,7 +178,7 @@ under the License.
                 <div ng-if="showForm === 'group'">
                     <h2 ng-show="formMode === 'edit'">{{currentForm.$dirty ? "Editing " : ""}}group {{shadowData.name}}</h2>
                     <h2 ng-show="formMode === 'add'">Adding new group</h2>
-                    <form name="editgroup" ng-submit="formEditOK(formData, editgroup)"  ng-keydown="$event.keyCode === 27 && escapePressed()">
+                    <form name="editgroup" ng-submit="formEditOK(formData, editgroup)" ng-keydown="$event.keyCode === 27 && escapePressed()">
                         <div class="form-group">
                             <label for="groupname">Group Name</label>
                             <input
@@ -216,8 +222,13 @@ under the License.
                         </div>
                         <div class="form-group">
                             <h3>Connection Restrictions</h3>
-                            <label for="remoteHosts">Remote Hosts</label>
-                            <input name="remoteHosts" type="text" class="form-control" id="remoteHosts" placeholder="An empty list denies all access" ng-class="{'warning': editgroup.remoteHosts.$madelValue == null}" ng-model="formData.remoteHosts">
+                            <label>Remote Hosts</label>
+                            <ui-select csv-select multiple tagging tagging-label="false" csv-model="formData.remoteHosts" ng-model="formData.remoteHostsList" theme="bootstrap" title="Enter or choose a remote host">
+                                <ui-select-match placeholder="An empty list denies all access">{{$item}}</ui-select-match>
+                                <ui-select-choices repeat="rm in remoteHostsList | filter:$select.search">
+                                    {{rm}}
+                                </ui-select-choices>
+                            </ui-select>
                             <small class="form-text text-muted"><div>List of remote hosts from which the users may connect. List values may be host names, numeric IP addresses, numeric IP address ranges, or the wildcard *. An empty list denies all access.</div></small>
                         </div>
                         <div class="form-group">
@@ -268,12 +279,22 @@ under the License.
                             </label>
                             <small class="form-text text-muted"><div>This connection is allowed to send messages with a user_id property that differs from the connection’s authenticated user id.</div></small>
                             <hr>
-                            <label for="sources">Sources</label>
-                            <input name="sources" type="string" class="form-control" id="sources" placeholder="An empty list denies all access" ng-model="formData.sources" ng-class="{'warning': editgroup.sources.$madelValue == null}" >
+                            <label>Sources</label>
+                            <ui-select csv-select multiple tagging tagging-label="false" csv-model="formData.sources" ng-model="formData.sourcesList" theme="bootstrap" title="Enter or choose a source address">
+                                <ui-select-match placeholder="An empty list denies all access" ng-class="{'warning': editgroup.sources.$madelValue == null}">{{$item}}</ui-select-match>
+                                <ui-select-choices repeat="rm in sourcesList | filter:$select.search">
+                                    {{rm}}
+                                </ui-select-choices>
+                            </ui-select>
                             <small class="form-text text-muted"><div>List of Source addresses allowed when creating receiving links. This list may be expressed as a CSV string or as a list of strings. An empty list denies all access.</div></small>
                             <hr>
-                            <label for="targets">Targets</label>
-                            <input name="targets" type="string" class="form-control" id="targets" placeholder="An empty list denies all access" ng-model="formData.targets"  ng-class="{'warning': editgroup.targets.$madelValue == null}" >
+                            <label>Targets</label>
+                            <ui-select csv-select multiple tagging tagging-label="false" csv-model="formData.targets" ng-model="formData.targetsList" theme="bootstrap" title="Enter or choose a target address">
+                                <ui-select-match placeholder="An empty list denies all access" ng-class="{'warning': editgroup.targets.$madelValue == null}">{{$item}}</ui-select-match>
+                                <ui-select-choices repeat="rm in targetsList | filter:$select.search">
+                                    {{rm}}
+                                </ui-select-choices>
+                            </ui-select>
                             <small class="form-text text-muted"><div>List of Target addresses allowed when creating sending links. This list may be expressed as a CSV string or as a list of strings. An empty list denies all access.</div></small>
                         </div>
                         <button type="submit" class="btn btn-primary" ng-disabled="editgroup.$invalid || editgroup.$pristine">Apply</button>

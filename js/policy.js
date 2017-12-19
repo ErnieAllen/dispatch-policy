@@ -302,11 +302,27 @@ var QDR = (function(QDR) {
           update(d);
         }
 
+        var select2Elements = ['remoteHosts', 'sources', 'targets']
+        var setupSelectModelTracking = function (d) {
+          select2Elements.forEach( function (select) {
+            $scope[select+'List'] = getAllTokens(d.parent, select)
+            d[select+'List'] = $scope.getCSVList(d, select)
+          })
+        }
+
+        $scope.onSelected = function (select, list) {
+          $scope.formData[select] = list.join(', ')
+        }
         var showForm = function (d) {
           $scope.showForm = d.type
           $scope.formData = d
           $scope.formMode = d.add ? 'add' : 'edit'
           $scope.shadowData = angular.copy(d)
+          if (d.type === 'group') {
+            $timeout ( function () {
+              setupSelectModelTracking(d)
+            })
+          }
         }
 
         var treeNode = function (d) {
@@ -363,6 +379,16 @@ var QDR = (function(QDR) {
             list = []
           return list
         }
+        var getAllTokens = function (d, attr) {
+          var list = []
+          for (var i=0; i<d.children.length; i++) {
+            var l = $scope.getCSVList(d.children[i], attr)
+            list = list.concat(l.filter( function (item) { return list.indexOf(item) < 0}))
+          }
+          return list
+        }
+
+
         $scope.resizeGrid = function (id, data, filters) {
           var g = $('#' + id)
           var headerheight = filters ? 66 : 36
@@ -526,7 +552,6 @@ var QDR = (function(QDR) {
       $scope.escapePressed = function () {
         $scope.formCancel()
       }
-
     }
   ])
 
@@ -659,6 +684,20 @@ var QDR = (function(QDR) {
        }
      };
    }
- ]);
+  ]);
 
-
+  // wrap the ui-select directive. keep the formData's csv in sync with the list of selections
+  QDR.module.directive('csvSelect', function() {
+    return {
+      require: 'uiSelect',
+      link: function(scope, element, attrs, $select) {
+        var whichAttr = attrs['csvModel']
+        var parts = whichAttr.split('.')
+        whichAttr = scope.$parent.$parent[parts[0]]
+        scope.$watch(attrs.ngModel, function (newValue, oldValue) {
+          if (newValue)
+            whichAttr[parts[1]] = newValue.join(', ')
+        })
+      }
+    };
+  });
